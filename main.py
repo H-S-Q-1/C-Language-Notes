@@ -39,6 +39,54 @@ def show_tasks(tasks):
         print(f"{index}. [{status}] {task['title']}")
 
 
+def complete_task(tasks):
+    if len(tasks) == 0:
+        print("当前还没有任务")
+        return
+
+    show_tasks(tasks)
+
+    try:
+        task_number = int(input("请输入要完成的任务编号：").strip())
+    except ValueError:
+        print("任务编号必须是整数")
+        return
+
+    if task_number < 1 or task_number > len(tasks):
+        print("任务编号不存在")
+        return
+
+    task = tasks[task_number - 1]
+
+    if task["completed"]:
+        print("这个任务已经完成了")
+        return
+
+    task["completed"] = True
+    print(f"任务已完成：{task['title']}")
+
+
+def delete_task(tasks):
+    if len(tasks) == 0:
+        print("当前还没有任务")
+        return
+
+    show_tasks(tasks)
+
+    try:
+        task_number = int(input("请输入要删除的任务编号：").strip())
+    except ValueError:
+        print("任务编号必须是整数")
+        return
+
+    if task_number < 1 or task_number > len(tasks):
+        print("任务编号不存在")
+        return
+
+    deleted_task = tasks.pop(task_number - 1)
+    print(f"任务已删除：{deleted_task['title']}")
+
+
 def main():
     tasks = []
 
@@ -53,8 +101,10 @@ def main():
             add_task(tasks)
         elif choice == "2":
             show_tasks(tasks)
-        elif choice in {"3", "4"}:
-            print("该功能将在后续版本实现")
+        elif choice == "3":
+            complete_task(tasks)
+        elif choice == "4":
+            delete_task(tasks)
         else:
             print("输入无效，请输入菜单中的编号")
 
