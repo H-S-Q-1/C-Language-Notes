@@ -11,6 +11,8 @@ def show_menu():
     print("2. 查看任务")
     print("3. 批量完成任务")
     print("4. 批量删除任务")
+    print("5. 搜索任务")
+    print("6. 按状态筛选")
     print("0. 退出")
 
 
@@ -111,6 +113,72 @@ def show_tasks(tasks):
     print("\n任务列表：")
 
     for index, task in enumerate(tasks, start=1):
+        status = "已完成" if task["completed"] else "未完成"
+        print(f"{index}. [{status}] {task['title']}")
+
+
+def search_task(tasks):
+    if len(tasks) == 0:
+        print("当前还没有任务")
+        return
+
+    keyword = input("请输入任务关键词：").strip()
+
+    if keyword == "":
+        print("搜索关键词不能为空")
+        return
+
+    keyword_lower = keyword.casefold()
+    matches = []
+
+    for index, task in enumerate(tasks, start=1):
+        if keyword_lower in task["title"].casefold():
+            matches.append((index, task))
+
+    if len(matches) == 0:
+        print(f"没有找到包含“{keyword}”的任务")
+        return
+
+    print(f"\n找到 {len(matches)} 条匹配任务：")
+
+    for index, task in matches:
+        status = "已完成" if task["completed"] else "未完成"
+        print(f"{index}. [{status}] {task['title']}")
+
+
+def filter_tasks(tasks):
+    if len(tasks) == 0:
+        print("当前还没有任务")
+        return
+
+    print("\n请选择筛选状态：")
+    print("1. 未完成任务")
+    print("2. 已完成任务")
+    choice = input("请选择：").strip()
+
+    if choice == "1":
+        completed_status = False
+        title = "未完成任务"
+    elif choice == "2":
+        completed_status = True
+        title = "已完成任务"
+    else:
+        print("筛选项无效")
+        return
+
+    matches = [
+        (index, task)
+        for index, task in enumerate(tasks, start=1)
+        if task["completed"] == completed_status
+    ]
+
+    if len(matches) == 0:
+        print(f"没有{title}")
+        return
+
+    print(f"\n{title}：")
+
+    for index, task in matches:
         status = "已完成" if task["completed"] else "未完成"
         print(f"{index}. [{status}] {task['title']}")
 
@@ -220,6 +288,10 @@ def main():
             complete_task(tasks)
         elif choice == "4":
             delete_task(tasks)
+        elif choice == "5":
+            search_task(tasks)
+        elif choice == "6":
+            filter_tasks(tasks)
         else:
             print("输入无效，请输入菜单中的编号")
 
