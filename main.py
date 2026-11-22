@@ -13,6 +13,8 @@ def show_menu():
     print("4. 批量删除任务")
     print("5. 搜索任务")
     print("6. 按状态筛选")
+    print("7. 修改任务名称")
+    print("8. 清空已完成任务")
     print("0. 退出")
 
 
@@ -183,6 +185,74 @@ def filter_tasks(tasks):
         print(f"{index}. [{status}] {task['title']}")
 
 
+def edit_task(tasks):
+    if len(tasks) == 0:
+        print("当前还没有任务")
+        return
+
+    show_tasks(tasks)
+
+    try:
+        task_number = int(input("请输入要修改的任务编号：").strip())
+    except ValueError:
+        print("任务编号必须是整数")
+        return
+
+    if task_number < 1 or task_number > len(tasks):
+        print("任务编号不存在")
+        return
+
+    task = tasks[task_number - 1]
+    print(f"当前任务名称：{task['title']}")
+
+    new_title = input("请输入新的任务名称，直接回车取消：").strip()
+
+    if new_title == "":
+        print("已取消修改")
+        return
+
+    if new_title == task["title"]:
+        print("任务名称没有变化")
+        return
+
+    old_title = task["title"]
+    task["title"] = new_title
+
+    if save_tasks(tasks):
+        print(f"任务名称已修改：{old_title} -> {new_title}")
+
+
+def clear_completed_tasks(tasks):
+    if len(tasks) == 0:
+        print("当前还没有任务")
+        return
+
+    completed_count = sum(
+        1 for task in tasks
+        if task["completed"]
+    )
+
+    if completed_count == 0:
+        print("当前没有已完成任务")
+        return
+
+    confirm = input(
+        f"确定清空 {completed_count} 条已完成任务吗？输入 y 确认："
+    ).strip().lower()
+
+    if confirm != "y":
+        print("已取消清空操作")
+        return
+
+    tasks[:] = [
+        task for task in tasks
+        if not task["completed"]
+    ]
+
+    if save_tasks(tasks):
+        print(f"已清空 {completed_count} 条已完成任务")
+
+
 def complete_task(tasks):
     if len(tasks) == 0:
         print("当前还没有任务")
@@ -292,6 +362,10 @@ def main():
             search_task(tasks)
         elif choice == "6":
             filter_tasks(tasks)
+        elif choice == "7":
+            edit_task(tasks)
+        elif choice == "8":
+            clear_completed_tasks(tasks)
         else:
             print("输入无效，请输入菜单中的编号")
 
