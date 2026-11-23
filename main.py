@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from pathlib import Path
 
 
@@ -15,6 +16,7 @@ def show_menu():
     print("6. 按状态筛选")
     print("7. 修改任务名称")
     print("8. 清空已完成任务")
+    print("9. 查看任务统计")
     print("0. 退出")
 
 
@@ -41,9 +43,15 @@ def load_tasks():
             and isinstance(item.get("title"), str)
             and isinstance(item.get("completed"), bool)
         ):
+            created_at = item.get("created_at")
+
+            if not isinstance(created_at, str) or created_at == "":
+                created_at = "未知"
+
             tasks.append({
                 "title": item["title"],
                 "completed": item["completed"],
+                "created_at": created_at,
             })
 
     return tasks
@@ -95,6 +103,7 @@ def add_task(tasks):
         new_tasks.append({
             "title": title,
             "completed": False,
+            "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         })
 
     if len(new_tasks) == 0:
@@ -107,6 +116,14 @@ def add_task(tasks):
         print(f"成功添加 {len(new_tasks)} 条任务")
 
 
+def print_task(index, task):
+    status = "已完成" if task["completed"] else "未完成"
+    created_at = task.get("created_at", "未知")
+
+    print(f"{index}. [{status}] {task['title']}")
+    print(f"   创建时间：{created_at}")
+
+
 def show_tasks(tasks):
     if len(tasks) == 0:
         print("当前还没有任务")
@@ -115,8 +132,7 @@ def show_tasks(tasks):
     print("\n任务列表：")
 
     for index, task in enumerate(tasks, start=1):
-        status = "已完成" if task["completed"] else "未完成"
-        print(f"{index}. [{status}] {task['title']}")
+        print_task(index, task)
 
 
 def search_task(tasks):
@@ -144,8 +160,7 @@ def search_task(tasks):
     print(f"\n找到 {len(matches)} 条匹配任务：")
 
     for index, task in matches:
-        status = "已完成" if task["completed"] else "未完成"
-        print(f"{index}. [{status}] {task['title']}")
+        print_task(index, task)
 
 
 def filter_tasks(tasks):
@@ -181,8 +196,7 @@ def filter_tasks(tasks):
     print(f"\n{title}：")
 
     for index, task in matches:
-        status = "已完成" if task["completed"] else "未完成"
-        print(f"{index}. [{status}] {task['title']}")
+        print_task(index, task)
 
 
 def edit_task(tasks):
@@ -251,6 +265,27 @@ def clear_completed_tasks(tasks):
 
     if save_tasks(tasks):
         print(f"已清空 {completed_count} 条已完成任务")
+
+
+def show_statistics(tasks):
+    total = len(tasks)
+
+    if total == 0:
+        print("当前还没有任务")
+        return
+
+    completed_count = sum(
+        1 for task in tasks
+        if task["completed"]
+    )
+    pending_count = total - completed_count
+    completion_rate = completed_count / total * 100
+
+    print("\n===== 任务统计 =====")
+    print(f"任务总数：{total}")
+    print(f"已完成：{completed_count}")
+    print(f"未完成：{pending_count}")
+    print(f"完成率：{completion_rate:.1f}%")
 
 
 def complete_task(tasks):
@@ -366,6 +401,8 @@ def main():
             edit_task(tasks)
         elif choice == "8":
             clear_completed_tasks(tasks)
+        elif choice == "9":
+            show_statistics(tasks)
         else:
             print("输入无效，请输入菜单中的编号")
 
