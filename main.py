@@ -4,6 +4,7 @@ from pathlib import Path
 
 
 TASKS_FILE = Path(__file__).with_name("tasks.json")
+DUE_TIME_FORMAT = "%Y-%m-%d %H:%M"
 
 
 def show_menu():
@@ -48,10 +49,21 @@ def load_tasks():
             if not isinstance(created_at, str) or created_at == "":
                 created_at = "未知"
 
+            due_at = item.get("due_at")
+
+            if not isinstance(due_at, str):
+                due_at = ""
+            else:
+                try:
+                    datetime.strptime(due_at, DUE_TIME_FORMAT)
+                except ValueError:
+                    due_at = ""
+
             tasks.append({
                 "title": item["title"],
                 "completed": item["completed"],
                 "created_at": created_at,
+                "due_at": due_at,
             })
 
     return tasks
@@ -90,20 +102,43 @@ def parse_task_numbers(text):
 
 
 def add_task(tasks):
-    print("请输入任务名称，每行一条，直接输入空行结束：")
+    print("请输入任务，每行一条，直接输入空行结束。")
+    print("格式：任务名称 | 截止时间（截止时间可省略）")
+    print("截止时间格式：YYYY-MM-DD HH:MM")
 
     new_tasks = []
 
     while True:
-        title = input("> ").strip()
+        text = input("> ").strip()
+
+        if text == "":
+            break
+
+        if "|" in text:
+            title, due_at = text.split("|", 1)
+            title = title.strip()
+            due_at = due_at.strip()
+        else:
+            title = text
+            due_at = ""
 
         if title == "":
-            break
+            print("任务名称不能为空，请重新输入")
+            continue
+
+        if due_at != "":
+            try:
+                datetime.strptime(due_at, DUE_TIME_FORMAT)
+            except ValueError:
+                print("截止时间格式错误，本条任务未添加")
+                print("正确格式示例：2026-12-01 18:30")
+                continue
 
         new_tasks.append({
             "title": title,
             "completed": False,
             "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "due_at": due_at,
         })
 
     if len(new_tasks) == 0:
@@ -116,12 +151,37 @@ def add_task(tasks):
         print(f"成功添加 {len(new_tasks)} 条任务")
 
 
+def is_overdue(task):
+    if task["completed"]:
+        return False
+
+    due_at = task.get("due_at", "")
+
+    if due_at == "":
+        return False
+
+    try:
+        deadline = datetime.strptime(due_at, DUE_TIME_FORMAT)
+    except ValueError:
+        return False
+
+    return datetime.now() > deadline
+
+
 def print_task(index, task):
     status = "已完成" if task["completed"] else "未完成"
     created_at = task.get("created_at", "未知")
+    due_at = task.get("due_at", "")
 
     print(f"{index}. [{status}] {task['title']}")
     print(f"   创建时间：{created_at}")
+
+    if due_at == "":
+        print("   截止时间：未设置")
+    elif is_overdue(task):
+        print(f"   截止时间：{due_at}（已逾期）")
+    else:
+        print(f"   截止时间：{due_at}")
 
 
 def show_tasks(tasks):
@@ -279,12 +339,17 @@ def show_statistics(tasks):
         if task["completed"]
     )
     pending_count = total - completed_count
+    overdue_count = sum(
+        1 for task in tasks
+        if is_overdue(task)
+    )
     completion_rate = completed_count / total * 100
 
     print("\n===== 任务统计 =====")
     print(f"任务总数：{total}")
     print(f"已完成：{completed_count}")
     print(f"未完成：{pending_count}")
+    print(f"已逾期：{overdue_count}")
     print(f"完成率：{completion_rate:.1f}%")
 
 
