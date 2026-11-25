@@ -21,6 +21,8 @@ def show_menu():
     print("8. 清空已完成任务")
     print("9. 查看任务统计")
     print("10. 导出任务记录")
+    print("11. 排序查看任务")
+    print("12. 修改截止时间")
     print("0. 退出")
 
 
@@ -407,6 +409,98 @@ def export_tasks(tasks):
     print(f"任务已导出到：{EXPORT_FILE}")
 
 
+def sort_tasks(tasks):
+    if len(tasks) == 0:
+        print("当前还没有任务")
+        return
+
+    print("\n请选择排序方式：")
+    print("1. 按截止时间从早到晚")
+    print("2. 按创建时间从新到旧")
+    print("3. 未完成任务优先")
+    choice = input("请选择：").strip()
+
+    items = list(enumerate(tasks, start=1))
+
+    if choice == "1":
+        items.sort(
+            key=lambda item: (
+                item[1].get("due_at", "") == "",
+                item[1].get("due_at", ""),
+            )
+        )
+        title = "按截止时间排序"
+    elif choice == "2":
+        items.sort(
+            key=lambda item: item[1].get("created_at", ""),
+            reverse=True,
+        )
+        title = "按创建时间排序"
+    elif choice == "3":
+        items.sort(
+            key=lambda item: (
+                item[1]["completed"],
+                item[1].get("due_at", "") == "",
+                item[1].get("due_at", ""),
+            )
+        )
+        title = "未完成任务优先"
+    else:
+        print("排序方式无效")
+        return
+
+    print(f"\n{title}：")
+
+    for index, task in items:
+        print_task(index, task)
+
+
+def edit_due_time(tasks):
+    if len(tasks) == 0:
+        print("当前还没有任务")
+        return
+
+    show_tasks(tasks)
+
+    try:
+        task_number = int(input("请输入要修改截止时间的任务编号：").strip())
+    except ValueError:
+        print("任务编号必须是整数")
+        return
+
+    if task_number < 1 or task_number > len(tasks):
+        print("任务编号不存在")
+        return
+
+    task = tasks[task_number - 1]
+    current_due = task.get("due_at", "") or "未设置"
+    print(f"当前截止时间：{current_due}")
+    print("输入新时间进行设置；输入 clear 或 清除 删除截止时间；直接回车取消")
+
+    new_due = input("新的截止时间：").strip()
+
+    if new_due == "":
+        print("已取消修改")
+        return
+
+    if new_due.lower() == "clear" or new_due == "清除":
+        new_due = ""
+    else:
+        try:
+            datetime.strptime(new_due, DUE_TIME_FORMAT)
+        except ValueError:
+            print("截止时间格式错误")
+            print("正确格式示例：2026-12-01 18:30")
+            return
+
+    old_due = task.get("due_at", "") or "未设置"
+    task["due_at"] = new_due
+
+    if save_tasks(tasks):
+        display_due = new_due or "未设置"
+        print(f"截止时间已修改：{old_due} -> {display_due}")
+
+
 def complete_task(tasks):
     if len(tasks) == 0:
         print("当前还没有任务")
@@ -524,6 +618,10 @@ def main():
             show_statistics(tasks)
         elif choice == "10":
             export_tasks(tasks)
+        elif choice == "11":
+            sort_tasks(tasks)
+        elif choice == "12":
+            edit_due_time(tasks)
         else:
             print("输入无效，请输入菜单中的编号")
 
