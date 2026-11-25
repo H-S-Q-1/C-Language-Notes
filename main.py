@@ -1,9 +1,11 @@
+import csv
 import json
 from datetime import datetime
 from pathlib import Path
 
 
 TASKS_FILE = Path(__file__).with_name("tasks.json")
+EXPORT_FILE = Path(__file__).with_name("task_export.csv")
 DUE_TIME_FORMAT = "%Y-%m-%d %H:%M"
 
 
@@ -18,6 +20,7 @@ def show_menu():
     print("7. 修改任务名称")
     print("8. 清空已完成任务")
     print("9. 查看任务统计")
+    print("10. 导出任务记录")
     print("0. 退出")
 
 
@@ -231,23 +234,33 @@ def filter_tasks(tasks):
     print("\n请选择筛选状态：")
     print("1. 未完成任务")
     print("2. 已完成任务")
+    print("3. 已逾期任务")
     choice = input("请选择：").strip()
 
     if choice == "1":
-        completed_status = False
         title = "未完成任务"
+        matches = [
+            (index, task)
+            for index, task in enumerate(tasks, start=1)
+            if not task["completed"]
+        ]
     elif choice == "2":
-        completed_status = True
         title = "已完成任务"
+        matches = [
+            (index, task)
+            for index, task in enumerate(tasks, start=1)
+            if task["completed"]
+        ]
+    elif choice == "3":
+        title = "已逾期任务"
+        matches = [
+            (index, task)
+            for index, task in enumerate(tasks, start=1)
+            if is_overdue(task)
+        ]
     else:
         print("筛选项无效")
         return
-
-    matches = [
-        (index, task)
-        for index, task in enumerate(tasks, start=1)
-        if task["completed"] == completed_status
-    ]
 
     if len(matches) == 0:
         print(f"没有{title}")
@@ -351,6 +364,47 @@ def show_statistics(tasks):
     print(f"未完成：{pending_count}")
     print(f"已逾期：{overdue_count}")
     print(f"完成率：{completion_rate:.1f}%")
+
+
+def export_tasks(tasks):
+    if len(tasks) == 0:
+        print("当前还没有任务，无法导出")
+        return
+
+    try:
+        with EXPORT_FILE.open(
+            "w",
+            encoding="utf-8-sig",
+            newline=""
+        ) as file:
+            writer = csv.writer(file)
+            writer.writerow([
+                "序号",
+                "任务名称",
+                "状态",
+                "创建时间",
+                "截止时间",
+                "是否逾期",
+            ])
+
+            for index, task in enumerate(tasks, start=1):
+                status = "已完成" if task["completed"] else "未完成"
+                due_at = task.get("due_at", "") or "未设置"
+                overdue = "是" if is_overdue(task) else "否"
+
+                writer.writerow([
+                    index,
+                    task["title"],
+                    status,
+                    task.get("created_at", "未知"),
+                    due_at,
+                    overdue,
+                ])
+    except OSError as error:
+        print(f"导出任务失败：{error}")
+        return
+
+    print(f"任务已导出到：{EXPORT_FILE}")
 
 
 def complete_task(tasks):
@@ -468,6 +522,8 @@ def main():
             clear_completed_tasks(tasks)
         elif choice == "9":
             show_statistics(tasks)
+        elif choice == "10":
+            export_tasks(tasks)
         else:
             print("输入无效，请输入菜单中的编号")
 
